@@ -1,0 +1,28 @@
+{
+  "inventory": [
+    {
+      "productId": "PROD001",
+      "productName": "Wireless Headphones",
+      "stock": 10
+    },
+    {
+      "productId": "PROD002",
+      "productName": "Mechanical Keyboard",
+      "stock": 5
+    }
+  ],
+  "products": [
+    {
+      "productId": "PROD001",
+      "name": "Wireless Headphones",
+      "price": 99,
+      "description": "Noise cancelling wireless headphones"
+    },
+    {
+      "productId": "PROD002",
+      "name": "Mechanical Keyboard",
+      "price": 149,
+      "description": "TKL mechanical keyboard"
+    }
+  ]
+}

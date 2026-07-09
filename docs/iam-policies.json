@@ -1,0 +1,58 @@
+{
+  "dynamodb-policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:PutItem",
+          "dynamodb:GetItem",
+          "dynamodb:UpdateItem",
+          "dynamodb:Query"
+        ],
+        "Resource": [
+          "arn:aws:dynamodb:REGION:ACCOUNT_ID:table/orders",
+          "arn:aws:dynamodb:REGION:ACCOUNT_ID:table/inventory",
+          "arn:aws:dynamodb:REGION:ACCOUNT_ID:table/products"
+        ]
+      }
+    ]
+  },
+  "sqs-policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": [
+          "sqs:ReceiveMessage",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes"
+        ],
+        "Resource": [
+          "arn:aws:sqs:REGION:ACCOUNT_ID:order-email-queue",
+          "arn:aws:sqs:REGION:ACCOUNT_ID:order-search-queue"
+        ]
+      }
+    ]
+  },
+  "eventbridge-policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "events:PutEvents",
+        "Resource": "arn:aws:events:REGION:ACCOUNT_ID:event-bus/order-events"
+      }
+    ]
+  },
+  "ses-policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Action": "ses:SendEmail",
+        "Resource": "*"
+      }
+    ]
+  }
+}
