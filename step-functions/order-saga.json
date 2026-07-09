@@ -1,0 +1,56 @@
+{
+  "Comment": "Order Processing Saga",
+  "StartAt": "ReserveInventory",
+  "States": {
+    "ReserveInventory": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:reserve-inventory",
+      "Catch": [{
+        "ErrorEquals": ["States.ALL"],
+        "Next": "FailOrder"
+      }],
+      "Next": "ProcessPayment"
+    },
+    "ProcessPayment": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:process-payment",
+      "Catch": [{
+        "ErrorEquals": ["States.ALL"],
+        "Next": "ReleaseInventoryAfterPaymentFail"
+      }],
+      "Next": "ConfirmOrder"
+    },
+    "ConfirmOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:confirm-order",
+      "Catch": [{
+        "ErrorEquals": ["States.ALL"],
+        "Next": "ReleaseInventoryAfterConfirmFail"
+      }],
+      "Next": "OrderSucceeded"
+    },
+    "ReleaseInventoryAfterPaymentFail": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:release-inventory",
+      "Next": "FailOrder"
+    },
+    "ReleaseInventoryAfterConfirmFail": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:release-inventory",
+      "Next": "FailOrder"
+    },
+    "FailOrder": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:fail-order",
+      "Next": "OrderFailed"
+    },
+    "OrderSucceeded": {
+      "Type": "Succeed"
+    },
+    "OrderFailed": {
+      "Type": "Fail",
+      "Error": "OrderFailed",
+      "Cause": "Saga compensation completed"
+    }
+  }
+}

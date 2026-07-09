@@ -27,12 +27,20 @@ resource "aws_opensearch_domain" "orders" {
 
   access_policies = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = { AWS = "arn:aws:iam::${var.account_id}:root" }
-      Action    = "es:*"
-      Resource  = "arn:aws:es:${var.aws_region}:${var.account_id}:domain/order-search/*"
-    }]
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${var.account_id}:root" }
+        Action    = "es:*"
+        Resource  = "arn:aws:es:${var.aws_region}:${var.account_id}:domain/order-search/*"
+      },
+      {
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${var.account_id}:role/order-lambda-role" }
+        Action    = "es:*"
+        Resource  = "arn:aws:es:${var.aws_region}:${var.account_id}:domain/order-search/*"
+      }
+    ]
   })
 }
 

@@ -1,7 +1,8 @@
 variable "aws_region" {
-  default = "us-east-1"
+  description = "AWS region"
+  default     = "us-east-1"
 }
 
 variable "account_id" {
-  default = "396913737205"
+  description = "AWS account ID"
 }
