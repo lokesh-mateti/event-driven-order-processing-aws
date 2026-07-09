@@ -157,6 +157,8 @@ terraform destroy
 ```
 
 ## Repository Structure
+
+```
 ├── lambdas/
 │   ├── order-processor/
 │   ├── reserve-inventory/
@@ -174,7 +176,10 @@ terraform destroy
 │   ├── outputs.tf
 │   └── terraform.tfvars.example
 └── docs/
-
+    ├── architecture.png
+    ├── seed-data.json
+    └── iam-policies.json
+```
 ## Author
 
 Lokesh Mateti — [GitHub](https://github.com/lokesh-mateti)
