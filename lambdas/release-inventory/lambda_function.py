@@ -4,7 +4,7 @@ dynamodb = boto3.resource('dynamodb')
 inventory_table = dynamodb.Table('inventory')
 
 def lambda_handler(event, context):
-    items = event['items']
+    items = event.get('items') or event.get('cause', {}).get('items', [])
     
     for item in items:
         inventory_table.update_item(
