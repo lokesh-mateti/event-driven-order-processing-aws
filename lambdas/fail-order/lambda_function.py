@@ -4,6 +4,7 @@ dynamodb = boto3.resource('dynamodb')
 orders_table = dynamodb.Table('orders')
 
 def lambda_handler(event, context):
+    # Handle both direct call and catch block call
     order_id = event.get('orderId') or event.get('cause', {}).get('orderId')
     
     if order_id:
