@@ -64,6 +64,7 @@ A production-style, event-driven order processing backend built on AWS serverles
 
 4. Create Lambda function `order-processor` (Python 3.12, `order-lambda-role`)
    - Set environment variables: `REDIS_ENDPOINT`, `VERIFIED_EMAIL`
+   - Set environment variables: `STATE_MACHINE_ARN`, `arn:aws:states:REGION:ACCOUNT_ID:stateMachine:order-saga`
    - Deploy code from `lambdas/order-processor/`
 
 5. Create REST API in API Gateway:
