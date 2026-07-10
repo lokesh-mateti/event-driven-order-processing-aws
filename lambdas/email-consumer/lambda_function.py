@@ -3,7 +3,7 @@ import boto3
 import os
 
 ses = boto3.client('ses', region_name='us-east-1')
-VERIFIED_EMAIL = os.environ.get('VERIFIED_EMAIL', '')
+VERIFIED_EMAIL = os.environ['VERIFIED_EMAIL']
 
 def lambda_handler(event, context):
     for record in event['Records']:
@@ -12,7 +12,7 @@ def lambda_handler(event, context):
         
         ses.send_email(
             Source=VERIFIED_EMAIL,
-            Destination={'ToAddresses': [detail['customerEmail']]},
+            Destination={'ToAddresses': [VERIFIED_EMAIL]},
             Message={
                 'Subject': {'Data': f"Order Confirmed - {detail['orderId']}"},
                 'Body': {
