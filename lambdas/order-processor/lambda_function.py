@@ -9,9 +9,11 @@ from decimal import Decimal
 dynamodb = boto3.resource('dynamodb')
 orders_table = dynamodb.Table('orders')
 products_table = dynamodb.Table('products')
+sfn = boto3.client('stepfunctions')
 
 REDIS_ENDPOINT = os.environ.get('REDIS_ENDPOINT', '')
 REDIS_PORT = 6379
+STATE_MACHINE_ARN = os.environ.get('STATE_MACHINE_ARN', '')
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -86,6 +88,20 @@ def lambda_handler(event, context):
             'status': 'PENDING',
             'createdAt': timestamp
         })
+
+        saga_input = {
+            'orderId': order_id,
+            'customerId': body['customerId'],
+            'customerEmail': body['customerEmail'],
+            'items': enriched_items,
+            'total': str(total)
+        }
+
+        sfn.start_execution(
+            stateMachineArn=STATE_MACHINE_ARN,
+            name=order_id,
+            input=json.dumps(saga_input)
+        )
 
         return {
             'statusCode': 200,
