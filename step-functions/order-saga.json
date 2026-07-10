@@ -4,45 +4,66 @@
   "States": {
     "ReserveInventory": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:reserve-inventory",
-      "Catch": [{
-        "ErrorEquals": ["States.ALL"],
-        "Next": "FailOrder"
-      }],
+      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:reserve-inventory",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "FailOrder",
+          "ResultPath": "$.error"
+        }
+      ],
+      "ResultPath": "$.reserveResult",
       "Next": "ProcessPayment"
     },
     "ProcessPayment": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:process-payment",
-      "Catch": [{
-        "ErrorEquals": ["States.ALL"],
-        "Next": "ReleaseInventoryAfterPaymentFail"
-      }],
+      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:process-payment",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "ReleaseInventoryAfterPaymentFail",
+          "ResultPath": "$.error"
+        }
+      ],
+      "ResultPath": "$.paymentResult",
       "Next": "ConfirmOrder"
     },
     "ConfirmOrder": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:confirm-order",
-      "Catch": [{
-        "ErrorEquals": ["States.ALL"],
-        "Next": "ReleaseInventoryAfterConfirmFail"
-      }],
+      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:confirm-order",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "ReleaseInventoryAfterConfirmFail",
+          "ResultPath": "$.error"
+        }
+      ],
+      "ResultPath": "$.confirmResult",
       "Next": "OrderSucceeded"
     },
     "ReleaseInventoryAfterPaymentFail": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:release-inventory",
-      "Next": "FailOrder"
+      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:release-inventory",
+      "Next": "FailOrder",
+      "ResultPath": "$.releaseResult"
     },
     "ReleaseInventoryAfterConfirmFail": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:release-inventory",
-      "Next": "FailOrder"
+      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:release-inventory",
+      "Next": "FailOrder",
+      "ResultPath": "$.releaseResult"
     },
     "FailOrder": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:REGION:ACCOUNT_ID:function:fail-order",
-      "Next": "OrderFailed"
+      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:fail-order",
+      "Next": "OrderFailed",
+      "ResultPath": "$.failResult"
     },
     "OrderSucceeded": {
       "Type": "Succeed"
