@@ -15,6 +15,21 @@
         }
       ],
       "ResultPath": "$.reserveResult",
+      "Next": "FraudCheck"
+    },
+    "FraudCheck": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:fraud-check",
+      "Catch": [
+        {
+          "ErrorEquals": [
+            "States.ALL"
+          ],
+          "Next": "ReleaseInventoryAfterFraudFail",
+          "ResultPath": "$.error"
+        }
+      ],
+      "ResultPath": "$.fraudResult",
       "Next": "ProcessPayment"
     },
     "ProcessPayment": {
@@ -46,6 +61,12 @@
       ],
       "ResultPath": "$.confirmResult",
       "Next": "OrderSucceeded"
+    },
+    "ReleaseInventoryAfterFraudFail": {
+      "Type": "Task",
+      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:release-inventory",
+      "Next": "FailOrder",
+      "ResultPath": "$.releaseResult"
     },
     "ReleaseInventoryAfterPaymentFail": {
       "Type": "Task",
