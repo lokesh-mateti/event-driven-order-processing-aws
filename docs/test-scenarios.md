@@ -9,7 +9,7 @@
 
 ## Scenario 1 — Happy path (order confirmed)
 
-**Expected:** Order flows through all saga steps, email sent, order indexed in OpenSearch.
+**Expected:** Order flows through all saga steps including AI fraud check, email sent, order indexed in OpenSearch.
 
 ### 1. Place an order
 ```bash
@@ -20,7 +20,8 @@ curl -X POST https://YOUR_API_URL/dev/orders \
 
 ### 2. Verify Step Functions execution
 - Step Functions → order-saga → latest execution
-- All states should be green: ReserveInventory → ProcessPayment → ConfirmOrder → OrderSucceeded
+- All states should be green: ReserveInventory → FraudCheck → ProcessPayment → ConfirmOrder → OrderSucceeded
+- Click FraudCheck state → verify fraud score is low (< 0.7) and risk level is "low"
 
 ### 3. Verify DynamoDB
 - orders table → order status = `CONFIRMED`
@@ -34,32 +35,33 @@ curl -X POST https://YOUR_API_URL/dev/orders \
 - `/aws/lambda/search-consumer` → `Indexed order..., status: 200`
 
 ### 6. Verify OpenSearch
-- OpenSearch → Domains → order-search → Indexes tab → orders index → document count increased
+- OpenSearch → Domains → order-search → Dev Tools → `GET /orders/_search`
+- Confirm order document is present
 
 ---
 
 ## Scenario 2 — Insufficient stock (reserve fails)
 
-**Expected:** Saga fails at ReserveInventory, order marked FAILED, no email sent, no search index entry, inventory unchanged.
+**Expected:** Saga fails at ReserveInventory before reaching fraud check, order marked FAILED, inventory unchanged.
 
 ### 1. Check current stock
-- DynamoDB → inventory table → PROD002 stock = 5
+- DynamoDB → inventory table → PROD001 stock value
 
 ### 2. Place order with quantity greater than stock
 ```bash
 curl -X POST https://YOUR_API_URL/dev/orders \
   -H "Content-Type: application/json" \
-  -d '{"customerId": "CUST001", "customerEmail": "your@email.com", "items": [{"productId": "PROD002", "name": "Mechanical Keyboard", "price": 149, "quantity": 99}]}'
+  -d '{"customerId": "CUST001", "customerEmail": "your@email.com", "items": [{"productId": "PROD001", "name": "Wireless Headphones", "price": 99, "quantity": 9999}]}'
 ```
 
 ### 3. Verify Step Functions execution
 - ReserveInventory → orange (caught error)
 - Execution goes directly to FailOrder → OrderFailed
-- ProcessPayment and ConfirmOrder never executed
+- FraudCheck, ProcessPayment and ConfirmOrder never executed
 
 ### 4. Verify DynamoDB
 - orders table → order status = `FAILED`
-- inventory table → PROD002 stock unchanged (still 5)
+- inventory table → PROD001 stock unchanged
 
 ### 5. Verify no email sent
 - No new email in inbox
@@ -67,9 +69,49 @@ curl -X POST https://YOUR_API_URL/dev/orders \
 
 ---
 
-## Scenario 3 — Payment failure with compensation
+## Scenario 3 — Fraud detection (AI-powered)
 
-**Expected:** Inventory reserved → payment fails → inventory released back → order FAILED.
+**Expected:** Inventory reserved → AI flags order as fraudulent (score >= 0.7) → inventory released → order FAILED.
+
+### 1. Note current PROD001 stock
+- DynamoDB → inventory table → note current stock value
+
+### 2. Place suspicious order
+```bash
+curl -X POST https://YOUR_API_URL/dev/orders \
+  -H "Content-Type: application/json" \
+  -d '{"customerId": "CUST999", "customerEmail": "xz93kd@tempmail.xyz", "items": [{"productId": "PROD001", "name": "Wireless Headphones", "price": 99, "quantity": 40}]}'
+```
+
+Fraud signals in this order:
+- Suspicious email domain (`tempmail.xyz`)
+- Bulk quantity (40 units)
+- High total ($3960)
+- Price anomaly flagged by AI
+
+### 3. Verify Step Functions execution
+- ReserveInventory → green (inventory reserved)
+- FraudCheck → orange (caught error, fraud score >= 0.7)
+- ReleaseInventoryAfterFraudFail → green (inventory released)
+- FailOrder → green
+- OrderFailed → red
+
+### 4. Verify fraud reasons in Step Functions
+- Click FraudCheck state → view error cause
+- Shows fraud score, risk level, and AI-generated reasons
+
+### 5. Verify compensation worked
+- inventory table → PROD001 stock restored to original value
+- orders table → order status = `FAILED`
+
+### 6. Verify no email sent
+- No confirmation email in inbox (EventBridge only fires on ORDER_CONFIRMED)
+
+---
+
+## Scenario 4 — Payment failure with compensation
+
+**Expected:** Inventory reserved → fraud check passes → payment fails → inventory released → order FAILED.
 
 ### 1. Note current PROD001 stock
 - DynamoDB → inventory table → note current stock value
@@ -94,6 +136,7 @@ curl -X POST https://YOUR_API_URL/dev/orders \
 
 ### 4. Verify Step Functions execution
 - ReserveInventory → green (stock decremented)
+- FraudCheck → green (fraud score low, order looks legitimate)
 - ProcessPayment → orange (caught error)
 - ReleaseInventoryAfterPaymentFail → green (stock restored)
 - FailOrder → green
@@ -109,7 +152,7 @@ curl -X POST https://YOUR_API_URL/dev/orders \
 
 ---
 
-## Scenario 4 — ElastiCache cache hit vs miss
+## Scenario 5 — ElastiCache cache hit vs miss
 
 **Expected:** First product lookup hits DynamoDB (cache miss), subsequent lookups served from Redis (cache hit).
 
