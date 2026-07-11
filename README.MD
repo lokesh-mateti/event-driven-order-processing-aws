@@ -1,6 +1,6 @@
 # Event-Driven Order Processing Platform on AWS
 
-A production-style, event-driven order processing backend built on AWS serverless and managed services. Demonstrates saga pattern, event fanout, compensating transactions, and infrastructure-as-code.
+A production-style, event-driven order processing backend built on AWS serverless and managed services. Demonstrates saga pattern, event fanout, compensating transactions, AI-powered fraud detection, and infrastructure-as-code.
 
 ## Architecture
 
@@ -16,6 +16,7 @@ A production-style, event-driven order processing backend built on AWS serverles
 - **SES** — order confirmation emails
 - **OpenSearch** — order search index
 - **ElastiCache (Redis)** — product cache on read path
+- **Amazon Bedrock** — AI-powered fraud detection (Amazon Nova Micro)
 - **IAM** — least-privilege roles per service
 - **Terraform** — provisions OpenSearch + ElastiCache
 
@@ -25,7 +26,7 @@ A production-style, event-driven order processing backend built on AWS serverles
 2. `order-processor` Lambda validates and writes order to DynamoDB (`PENDING`)
 3. Step Functions saga starts:
    - Reserve inventory (conditional check on stock)
-   - Score fraud (placeholder for Bedrock integration)
+   - AI fraud check via Amazon Bedrock (Nova Micro) — scores order for suspicious patterns (high total, bulk quantity, suspicious email, price anomaly)
    - Process payment (simulated, 90% success)
    - Confirm order → updates DynamoDB (`CONFIRMED`) → publishes to EventBridge
 4. EventBridge fans out to two SQS queues simultaneously
@@ -36,6 +37,7 @@ A production-style, event-driven order processing backend built on AWS serverles
 | Failure point | Compensation |
 |---|---|
 | Reserve inventory fails | → FailOrder directly |
+| Fraud check fails | → Release inventory → FailOrder |
 | Payment fails | → Release inventory → FailOrder |
 | Confirm fails | → Release inventory → FailOrder |
 
@@ -60,7 +62,7 @@ A production-style, event-driven order processing backend built on AWS serverles
 
 3. Create IAM role `order-lambda-role` with:
    - `AWSLambdaBasicExecutionRole`
-   - Inline policy for DynamoDB, SQS, SES, EventBridge (see `docs/iam-policies.json`)
+   - Inline policy for DynamoDB, SQS, SES, EventBridge, Step Functions, Bedrock (see `docs/iam-policies.json`)
 
 4. Create Lambda function `order-processor` (Python 3.12, `order-lambda-role`)
    - Set environment variables: `REDIS_ENDPOINT`, `VERIFIED_EMAIL`
@@ -83,6 +85,7 @@ curl -X POST https://YOUR_API_URL/dev/orders \
 
 1. Create saga Lambda functions (all use `order-lambda-role`, Python 3.12):
    - `reserve-inventory`
+   - `fraud-check` (calls Amazon Bedrock Nova Micro for AI fraud scoring)
    - `process-payment`
    - `confirm-order` (set env var: `OPENSEARCH_ENDPOINT`)
    - `fail-order`
@@ -93,7 +96,7 @@ curl -X POST https://YOUR_API_URL/dev/orders \
    - Replace `REGION` and `ACCOUNT_ID` with your values
    - Let AWS auto-create the execution role
 
-3. Test happy path and failure path via Step Functions console
+3. Test happy path and failure paths via Step Functions console
 
 ### Phase 3 — EventBridge + SQS
 
@@ -137,6 +140,30 @@ terraform apply
 
 4. Update OpenSearch access policy to allow `order-lambda-role`
 
+### Phase 5 — AI Fraud Detection (Amazon Bedrock)
+
+1. Submit Anthropic use case details in Bedrock console (one-time, per account)
+
+2. Add inline policies to `order-lambda-role`:
+   - `order-lambda-bedrock-policy` — `bedrock:InvokeModel` on `amazon.nova-micro-v1:0`
+   - `order-lambda-marketplace-policy` — `aws-marketplace:ViewSubscriptions`, `aws-marketplace:Subscribe`
+
+3. Deploy `fraud-check` Lambda from `lambdas/fraud-check/`
+
+4. Update `order-saga` state machine with the definition from `step-functions/order-saga.json` (includes FraudCheck state and ReleaseInventoryAfterFraudFail compensation)
+
+## IAM Policies on order-lambda-role
+
+| Policy name | Permissions |
+|---|---|
+| order-lambda-dynamo-policy | DynamoDB on orders, inventory, products |
+| order-lambda-eventbridge-policy | events:PutEvents on order-events bus |
+| order-lambda-sqs-policy | SQS receive/delete on both queues |
+| order-lambda-ses-policy | ses:SendEmail |
+| order-lambda-stepfunctions-policy | states:StartExecution on order-saga |
+| order-lambda-bedrock-policy | bedrock:InvokeModel on amazon.nova-micro-v1:0 |
+| order-lambda-marketplace-policy | aws-marketplace:ViewSubscriptions, aws-marketplace:Subscribe |
+
 ## Cost
 
 | Service | Cost when idle |
@@ -148,6 +175,7 @@ terraform apply
 | EventBridge | $0 (per event) |
 | SQS | $0 (per request) |
 | SES | $0 (per email) |
+| Amazon Bedrock | $0 (per token, ~$0.001 per fraud check) |
 | OpenSearch | ~$1/day (hourly billing) |
 | ElastiCache | ~$0.50/day (hourly billing) |
 
@@ -163,6 +191,7 @@ terraform destroy
 ├── lambdas/
 │   ├── order-processor/
 │   ├── reserve-inventory/
+│   ├── fraud-check/
 │   ├── process-payment/
 │   ├── confirm-order/
 │   ├── fail-order/
@@ -181,6 +210,7 @@ terraform destroy
     ├── seed-data.json
     └── iam-policies.json
 ```
+
 ## Author
 
 Lokesh Mateti — [GitHub](https://github.com/lokesh-mateti)
