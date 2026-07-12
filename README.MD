@@ -4,7 +4,7 @@ A production-style, event-driven order processing backend built on AWS serverles
 
 ## Architecture
 
-![Architecture Diagram](docs/architecture.png)
+![Architecture Diagram](docs/architecture.svg)
 
 ### Services Used
 - **API Gateway** — REST API entry point (POST /orders)
