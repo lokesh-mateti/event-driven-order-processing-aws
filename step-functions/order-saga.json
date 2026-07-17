@@ -4,7 +4,7 @@
   "States": {
     "ReserveInventory": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:reserve-inventory",
+      "Resource": "arn:aws:lambda:us-east-1:<Awsaccountid>:function:reserve-inventory",
       "Catch": [
         {
           "ErrorEquals": [
@@ -19,7 +19,7 @@
     },
     "FraudCheck": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:fraud-check",
+      "Resource": "arn:aws:lambda:us-east-1:<Awsaccountid>:function:fraud-check",
       "Catch": [
         {
           "ErrorEquals": [
@@ -34,7 +34,7 @@
     },
     "ProcessPayment": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:process-payment",
+      "Resource": "arn:aws:lambda:us-east-1:<Awsaccountid>:function:process-payment",
       "Catch": [
         {
           "ErrorEquals": [
@@ -49,7 +49,7 @@
     },
     "ConfirmOrder": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:confirm-order",
+      "Resource": "arn:aws:lambda:us-east-1:<Awsaccountid>:function:confirm-order",
       "Catch": [
         {
           "ErrorEquals": [
@@ -64,25 +64,25 @@
     },
     "ReleaseInventoryAfterFraudFail": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:release-inventory",
+      "Resource": "arn:aws:lambda:us-east-1:<Awsaccountid>:function:release-inventory",
       "Next": "FailOrder",
       "ResultPath": "$.releaseResult"
     },
     "ReleaseInventoryAfterPaymentFail": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:release-inventory",
+      "Resource": "arn:aws:lambda:us-east-1:<Awsaccountid>:function:release-inventory",
       "Next": "FailOrder",
       "ResultPath": "$.releaseResult"
     },
     "ReleaseInventoryAfterConfirmFail": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:release-inventory",
+      "Resource": "arn:aws:lambda:us-east-1:<Awsaccountid>:function:release-inventory",
       "Next": "FailOrder",
       "ResultPath": "$.releaseResult"
     },
     "FailOrder": {
       "Type": "Task",
-      "Resource": "arn:aws:lambda:us-east-1:396913737205:function:fail-order",
+      "Resource": "arn:aws:lambda:us-east-1:<Awsaccountid>:function:fail-order",
       "Next": "OrderFailed",
       "ResultPath": "$.failResult"
     },
